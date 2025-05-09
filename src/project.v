@@ -5,7 +5,7 @@
 
 `default_nettype none
 
-module tt_um_uwasic_onboarding_Kelly_Duong
+module tt_um_uwasic_onboarding_Kelly_Duong (
     input  wire [7:0] ui_in,    // Dedicated inputs
     output wire [7:0] uo_out,   // Dedicated outputs
     input  wire [7:0] uio_in,   // IOs: Input path
@@ -39,7 +39,21 @@ module tt_um_uwasic_onboarding_Kelly_Duong
     .out({uio_out, uo_out})
   );
 
+  spi_peripheral spi_peripheral_inst(
+    .clk(clk),
+    .rst_n(rst_n),
+
+    .en_reg_out_7_0(en_reg_out_7_0),
+    .en_reg_out_15_8(en_reg_out_15_8),
+    .en_reg_pwm_7_0(en_reg_pwm_7_0),
+    .en_reg_pwm_15_8(en_reg_pwm_15_8),
+    .pwm_duty_cycle(pwm_duty_cycle),
+
+    .spi_sclk(uio_in[0]),
+    .spi_copi(uio_in[1]),
+    .spi_cs(uio_in[2])
+  );
+
   // List all unused inputs to prevent warnings
   wire _unused = &{ena, ui_in[7:3], uio_in, 1'b0};
-
 endmodule
