@@ -7,7 +7,9 @@
 
 module pwm_peripheral (
     input  wire       clk,      // clock
-    input  wire       rst_n,     // reset_n - low to reset
+    input  wire       rst_n,    // reset_n - low to reset
+
+    //Registers
     input  wire [7:0] en_reg_out_7_0,
     input  wire [7:0] en_reg_out_15_8,
     input  wire [7:0] en_reg_pwm_7_0,
