@@ -26,7 +26,7 @@ module spi_peripheral (
     reg [15:0] spi_shift;                   // register to store shifted bits (16 bits)
 
     reg transaction_ready;                  // flag to signal a ready transaction
-    reg transaction_complete;               // flag to signal a complete transaction
+    reg transaction_processed;               // flag to signal a complete transaction
 
     reg rw_bit;
     reg [6:0] reg_address;

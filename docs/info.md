@@ -12,9 +12,8 @@ You can also include images in this folder and reference them in the markdown. E
 Utilizing SPI, a PWM peripheral is controlled
 
 ## How to test
-
-Explain how to use your project
+Test using test scripts and waveforms.
 
 ## External hardware
-
+No external hardware right now.
 List external hardware used in your project (e.g. PMOD, LED display, etc), if any
