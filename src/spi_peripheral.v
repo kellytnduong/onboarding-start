@@ -16,6 +16,8 @@ module spi_peripheral (
     output  reg [7:0] en_reg_pwm_15_8,
     output  reg [7:0] pwm_duty_cycle,
 
+    output wire [7:0] uo_out,
+
     input  wire       spi_sclk,
     input  wire       spi_copi,
     input  wire       spi_cs
@@ -31,6 +33,8 @@ module spi_peripheral (
     reg rw_bit;
     reg [6:0] reg_address;
     reg [7:0] data;
+    reg [7:0] final_value;
+    assign uo_out = final_value;
     
     //Sync with 3 flip flops to avoid metastability
     reg spi_sclk_curr;
@@ -130,6 +134,7 @@ module spi_peripheral (
             en_reg_pwm_7_0 <= 0;
             en_reg_pwm_15_8 <= 0;
             pwm_duty_cycle <= 0;
+            final_value <= 0;
 
         end else if (transaction_ready && !transaction_processed) begin
             transaction_processed <= 1'b1;
@@ -152,6 +157,7 @@ module spi_peripheral (
                     pwm_duty_cycle <= spi_shift[7:0];
                     default: ;
                 endcase
+                final_value <= spi_shift[7:0];
             end
         end else if (!transaction_ready && transaction_processed) begin
             transaction_processed <= 1'b0;
