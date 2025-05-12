@@ -97,7 +97,7 @@ module spi_peripheral (
         if (!rst_n) begin
             spi_shift <= 16'd0;
             bit_count <= 0;
-        end else if (spi_cs_prev0 == 1'b0) begin
+        end else if (spi_cs_curr == 1'b0) begin
             if (spi_sclk_rising) begin
                 spi_shift <= {spi_shift[14:0], spi_copi_prev1};
                 bit_count <= bit_count + 1;
@@ -141,9 +141,8 @@ module spi_peripheral (
             rw_bit <= spi_shift[15];
             reg_address <= spi_shift[14:8];
             data <= spi_shift[7:0];
-            $display("Processing transaction: rw_bit = %b, address = %h, data = %h", rw_bit, reg_address, data);
-
-            if (spi_shift[15] == 1) begin
+            
+            if (spi_shift[15] == 1 && reg_address <= max_address && reg_address == 7'h0) begin
                 case (spi_shift[14:8])
                     7'h00:
                     en_reg_out_7_0 <= spi_shift[7:0];
@@ -155,9 +154,11 @@ module spi_peripheral (
                     en_reg_pwm_15_8 <= spi_shift[7:0];
                     7'h04:
                     pwm_duty_cycle <= spi_shift[7:0];
-                    default: final_value <= 15;
+                    default: ;
                 endcase
                 final_value <= spi_shift[7:0];
+            end else begin
+                final_value <= 8'd0;
             end
         end else if (!transaction_ready && transaction_processed) begin
             transaction_processed <= 1'b0;
