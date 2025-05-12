@@ -49,9 +49,9 @@ module tt_um_uwasic_onboarding_Kelly_Duong (
     .en_reg_pwm_15_8(en_reg_pwm_15_8),
     .pwm_duty_cycle(pwm_duty_cycle),
 
-    .spi_sclk(uio_in[0]),
-    .spi_copi(uio_in[1]),
-    .spi_cs(uio_in[2])
+    .spi_sclk(ui_in[0]),
+    .spi_copi(ui_in[1]),
+    .spi_cs(ui_in[2])
   );
 
   // List all unused inputs to prevent warnings
