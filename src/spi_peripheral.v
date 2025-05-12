@@ -34,7 +34,6 @@ module spi_peripheral (
     reg [6:0] reg_address;
     reg [7:0] data;
     reg [7:0] final_value;
-    assign uo_out = final_value;
     
     //Sync with 3 flip flops to avoid metastability
     reg spi_sclk_curr;
@@ -103,7 +102,7 @@ module spi_peripheral (
                 spi_shift <= {spi_shift[14:0], spi_copi_prev1};
                 bit_count <= bit_count + 1;
             end
-        end else begin
+        end else if (bit_count == 16) begin
             bit_count <= 0;
         end
     end
@@ -142,6 +141,7 @@ module spi_peripheral (
             rw_bit <= spi_shift[15];
             reg_address <= spi_shift[14:8];
             data <= spi_shift[7:0];
+            $display("Processing transaction: rw_bit = %b, address = %h, data = %h", rw_bit, reg_address, data);
 
             if (spi_shift[15] == 1) begin
                 case (spi_shift[14:8])
@@ -155,7 +155,7 @@ module spi_peripheral (
                     en_reg_pwm_15_8 <= spi_shift[7:0];
                     7'h04:
                     pwm_duty_cycle <= spi_shift[7:0];
-                    default: ;
+                    default: final_value <= 15;
                 endcase
                 final_value <= spi_shift[7:0];
             end
@@ -163,4 +163,5 @@ module spi_peripheral (
             transaction_processed <= 1'b0;
         end
     end
+    assign uo_out = final_value;
 endmodule
