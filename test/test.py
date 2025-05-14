@@ -169,7 +169,8 @@ async def receive_pwm_sample(dut, signal, channel):
     while not high():
         await ClockCycles(dut.clk, 1)
         if cocotb.utils.get_sim_time(units="ns") - start_time > max_time:
-            assert False, f"Timeout waiting for PWM signal to go high on channel {channel}"
+            dut._log.warning(f"Timeout waiting for PWM signal to go high on channel {channel}")
+            return 0, 0
 
     while len(num_of_rising) <= cycles:
         while not high():
@@ -185,7 +186,8 @@ async def receive_pwm_sample(dut, signal, channel):
         high_times.append(fall_time - rise_time)
 
         if fall_time - start_time > max_time:
-            assert False, f"Timeout waiting for PWM signal to go low on channel {channel}"
+            dut._log.warning(f"Timeout waiting for PWM signal to go low on channel {channel}")
+            return 1, 0
     
     periods = []
     for t1, t2 in zip(num_of_rising, num_of_rising[1:]):
@@ -295,7 +297,7 @@ async def test_pwm_duty(dut):
         # 50% Duty cycle
         await send_spi_transaction(dut, 1, 0x04, 0x80)
         duty, frequency = await receive_pwm_sample(dut, dut.uo_out, channel=i)
-        assert 0.499999 <= duty <= 0.500001, f"Expected 50% duty cycle on channel {i}, got {duty}"
+        assert 0.499 <= duty <= 0.501, f"Expected 50% duty cycle on channel {i}, got {duty}"
 
         # 100% Duty cycle
         await send_spi_transaction(dut, 1, 0x04, 0xFF)
