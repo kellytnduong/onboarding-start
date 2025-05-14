@@ -291,16 +291,19 @@ async def test_pwm_duty(dut):
 
         # 0% Duty cycle
         await send_spi_transaction(dut, 1, 0x04, 0x00)
+        await ClockCycles(dut.clk, 10000)
         duty, frequency = await receive_pwm_sample(dut, dut.uo_out, channel=i)
         assert duty == 0, f"Expected 0% duty cycle on channel {i}, got {duty}"
 
         # 50% Duty cycle
         await send_spi_transaction(dut, 1, 0x04, 0x80)
+        await ClockCycles(dut.clk, 10000)
         duty, frequency = await receive_pwm_sample(dut, dut.uo_out, channel=i)
         assert 0.499 <= duty <= 0.501, f"Expected 50% duty cycle on channel {i}, got {duty}"
 
         # 100% Duty cycle
         await send_spi_transaction(dut, 1, 0x04, 0xFF)
+        await ClockCycles(dut.clk, 10000)
         duty, frequency = await receive_pwm_sample(dut, dut.uo_out, channel=i)
         assert duty == 1, f"Expected 100% duty cycle on channel {i}, got {duty}"
 
