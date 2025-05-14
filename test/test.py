@@ -157,6 +157,7 @@ async def receive_pwm_sample(dut, signal, channel):
 
     num_of_rising = []
     high_times = []
+    prev_edge = (int(signal.value) >> channel) & 0x1
 
     def high():
         return ((int(signal.value) >> channel) & 0x1) == 1
@@ -166,28 +167,25 @@ async def receive_pwm_sample(dut, signal, channel):
     
     start_time = cocotb.utils.get_sim_time(units="ns")
 
-    while not high():
-        await ClockCycles(dut.clk, 1)
-        if cocotb.utils.get_sim_time(units="ns") - start_time > max_time:
-            dut._log.warning(f"Timeout waiting for PWM signal to go high on channel {channel}")
-            return 0, 0
-
     while len(num_of_rising) <= cycles:
-        while not high():
-            await ClockCycles(dut.clk, 1)
+        await ClockCycles(dut.clk, 1)
         
         rise_time = cocotb.utils.get_sim_time(units="ns")
-        num_of_rising.append(rise_time)
 
-        while not low():
-            await ClockCycles(dut.clk, 1)
-
-        fall_time = cocotb.utils.get_sim_time(units="ns")
-        high_times.append(fall_time - rise_time)
-
-        if fall_time - start_time > max_time:
-            dut._log.warning(f"Timeout waiting for PWM signal to go low on channel {channel}")
-            return 1, 0
+        #If signal is stuck
+        if (rise_time - start_time) > max_time:
+            if (high()):
+                return 1, 0
+            elif (low()):
+                return 0, 0
+            
+        #Otherwise, check for rising edge and append
+        if (high() and (prev_edge == 0)):
+            num_of_rising.append(rise_time)
+            #Calculate high time if there have been 2+ rising edges
+            if (len(num_of_rising) > 1):
+                high_times.append(rise_time - num_of_rising[-2])
+        prev_edge = (int(signal.value) >> channel) & 0x1
     
     periods = []
     for t1, t2 in zip(num_of_rising, num_of_rising[1:]):
