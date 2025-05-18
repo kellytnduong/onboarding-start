@@ -142,7 +142,7 @@ module spi_peripheral (
             reg_address <= spi_shift[14:8];
             data <= spi_shift[7:0];
             
-            if (spi_shift[15] == 1 && reg_address <= max_address && reg_address == 7'h0) begin
+            if (spi_shift[15] == 1 && reg_address <= max_address && reg_address >= 7'h0) begin
                 case (spi_shift[14:8])
                     7'h00:
                     en_reg_out_7_0 <= spi_shift[7:0];

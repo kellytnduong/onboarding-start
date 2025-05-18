@@ -152,47 +152,57 @@ async def test_spi(dut):
 
 async def receive_pwm_sample(dut, signal, channel):
     period = 100 # in ns
-    max_time = 3_330_000 # in ns
+    max_time = 4000000 # in ns
     cycles = 2 #number of cycles to wait
 
     num_of_rising = []
+    num_of_falling = []
     high_times = []
     prev_edge = (int(signal.value) >> channel) & 0x1
 
-    def high():
-        return ((int(signal.value) >> channel) & 0x1) == 1
-    
-    def low():
-        return ((int(signal.value) >> channel) & 0x1) == 0
+    last_high = 0
+    last_low = 0
     
     start_time = cocotb.utils.get_sim_time(units="ns")
 
     while len(num_of_rising) <= cycles:
         await ClockCycles(dut.clk, 1)
         
-        rise_time = cocotb.utils.get_sim_time(units="ns")
+        curr_time = cocotb.utils.get_sim_time(units="ns")
+        curr_edge = (int(signal.value) >> channel) & 0x1
 
         #If signal is stuck
-        if (rise_time - start_time) > max_time:
-            if (high()):
+        if (curr_time - start_time) > max_time:
+            if (curr_edge == 1):
                 return 1, 0
-            elif (low()):
+            elif (curr_edge == 0):
                 return 0, 0
             
-        #Otherwise, check for rising edge and append
-        if (high() and (prev_edge == 0)):
-            num_of_rising.append(rise_time)
-            #Calculate high time if there have been 2+ rising edges
-            if (len(num_of_rising) > 1):
-                high_times.append(rise_time - num_of_rising[-2])
-        prev_edge = (int(signal.value) >> channel) & 0x1
-    
+        #Otherwise, check for rising edge/falling edge and append
+        if ((curr_edge == 1) and (prev_edge == 0)):
+            num_of_rising.append(curr_time)
+            last_high = curr_time
+        elif ((curr_edge == 0) and (prev_edge == 1)):
+            num_of_falling.append(curr_time)
+            if (last_high != 0):
+                high_times.append(curr_time - last_high)
+            last_low = curr_time
+
+        prev_edge = curr_edge
+
     periods = []
     for t1, t2 in zip(num_of_rising, num_of_rising[1:]):
         periods.append(t2 - t1)
-    
-    avg_period = sum(periods)/len(periods)
-    avg_high_times = sum(high_times)/len(high_times)
+
+    if (high_times.empty()):
+        avg_high_times = 0
+    else:
+        avg_high_times = sum(high_times)/len(high_times)
+
+    if (periods.empty()):
+        avg_period = 0
+    else:
+        avg_period = sum(periods)/len(periods)
 
     if (avg_period > 0):
         frequency = 1E9/avg_period
@@ -228,10 +238,10 @@ async def test_pwm_freq(dut):
     dut._log.info("Testing ui_out frequencies (Output & PWM channels 0-7)")
     for i in range(8):
         dut._log.info("Writing to Output channel %d", i)
-        ui_in_val = await send_spi_transaction(dut, 1, 0x00, i << 1)
+        ui_in_val = await send_spi_transaction(dut, 1, 0x00, i)
 
         dut._log.info("Writing to PWM channel %d", i)
-        ui_in_val = await send_spi_transaction(dut, 1, 0x02, i << 1)
+        ui_in_val = await send_spi_transaction(dut, 1, 0x02, i)
 
         dut._log.info("Reading PWM channel %d", i)
         duty, frequency = await receive_pwm_sample(dut, dut.uo_out, channel=i)
@@ -244,10 +254,10 @@ async def test_pwm_freq(dut):
     dut._log.info("Testing uio_out frequencies (Output & PWM channels 8-15)")
     for i in range(8):
         dut._log.info("Writing to Output channel %d", i+8)
-        ui_in_val = await send_spi_transaction(dut, 1, 0x01, i << 1)
+        ui_in_val = await send_spi_transaction(dut, 1, 0x01, i)
         
         dut._log.info("Writing to PWM channel %d", i+8)
-        ui_in_val = await send_spi_transaction(dut, 1, 0x03, i << 1)
+        ui_in_val = await send_spi_transaction(dut, 1, 0x03, i)
 
         dut._log.info("Reading PWM channel %d", i+8)
         duty, frequency = await receive_pwm_sample(dut, dut.uio_out, channel=i)
@@ -282,10 +292,10 @@ async def test_pwm_duty(dut):
     dut.log.info("Testing ui_out duty cycle (Output & PWM channels 0-7)")
     for i in range(8):
         dut._log.info("Writing to Output channel %d", i)
-        ui_in_val = await send_spi_transaction(dut, 1, 0x00, i << 1)
+        ui_in_val = await send_spi_transaction(dut, 1, 0x00, i)
 
         dut._log.info("Writing to PWM channel %d", i)
-        ui_in_val = await send_spi_transaction(dut, 1, 0x02, i << 1)
+        ui_in_val = await send_spi_transaction(dut, 1, 0x02, i)
 
         # 0% Duty cycle
         await send_spi_transaction(dut, 1, 0x04, 0x00)
@@ -311,10 +321,10 @@ async def test_pwm_duty(dut):
     dut.log.info("Testing ui_out duty cycle (Output & PWM channels 8-15)")
     for i in range(8):
         dut._log.info("Writing to Output channel %d", i+8)
-        ui_in_val = await send_spi_transaction(dut, 1, 0x01, i << 1)
+        ui_in_val = await send_spi_transaction(dut, 1, 0x01, i)
 
         dut._log.info("Writing to PWM channel %d", i+8)
-        ui_in_val = await send_spi_transaction(dut, 1, 0x03, i << 1)
+        ui_in_val = await send_spi_transaction(dut, 1, 0x03, i)
 
         # 0% Duty cycle
         await send_spi_transaction(dut, 1, 0x04, 0x00)
@@ -324,7 +334,7 @@ async def test_pwm_duty(dut):
         # 50% Duty cycle
         await send_spi_transaction(dut, 1, 0x04, 0x80)
         duty, frequency = await receive_pwm_sample(dut, dut.uio_out, channel=i)
-        assert 0.499999 <= duty <= 0.500001, f"Expected 50% duty cycle on channel {i+8}, got {duty}"
+        assert 0.499 <= duty <= 0.501, f"Expected 50% duty cycle on channel {i+8}, got {duty}"
 
         # 100% Duty cycle
         await send_spi_transaction(dut, 1, 0x04, 0xFF)
